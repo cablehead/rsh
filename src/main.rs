@@ -74,7 +74,6 @@ mod my_module {
     // Sub-modules are commonly used to put feature gates on a group of
     // functions because feature gates cannot be put on function definitions.
     // This is currently a limitation of the plugin procedural macros.
-    #[cfg(feature = "advanced_functions")]
     pub mod advanced {
         // This function is ignored when registered globally.
         // Otherwise it is a valid registered function under a sub-module
@@ -87,6 +86,11 @@ mod my_module {
 
 
 pub fn main() -> Result<(), Box<rhai::EvalAltResult>> {
+    let mut buffer = String::new();
+    let stdin = std::io::stdin();
+    stdin.read_line(&mut buffer).unwrap();
+    print!("{}", buffer);
+
     let args = Args::parse();
 
     let mut engine = rhai::Engine::new();
@@ -94,11 +98,7 @@ pub fn main() -> Result<(), Box<rhai::EvalAltResult>> {
       // The macro call creates a Rhai module from the plugin module.
     let module = exported_module!(my_module);
 
-    // A module can simply be registered into the global namespace.
-    engine.register_global_module(module.into());
-
-    // Define a custom operator '@' with precedence of 160 (i.e. between +|- and *|/).
-    engine.register_custom_operator("@", 160).unwrap();
+    engine.register_static_module("sh", module.into());
 
     engine.run_file(args.path)?;
     Ok(())
