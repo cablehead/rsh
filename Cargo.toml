@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 rhai = { version = "1.11.0", features = ["bin-features"] }
+clap = { version = "3.2.14", features = ["derive"] }

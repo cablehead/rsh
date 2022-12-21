@@ -1,4 +1,14 @@
-use rhai::plugin::*;        // a "prelude" import for macros
+use clap::{AppSettings, Parser};
+
+use rhai::plugin::*;
+
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+#[clap(global_setting(AppSettings::DisableHelpSubcommand))]
+struct Args {
+    #[clap(value_parser)]
+    path: std::path::PathBuf,
+}
 
 // My custom type
 #[derive(Clone)]
@@ -77,6 +87,8 @@ mod my_module {
 
 
 pub fn main() -> Result<(), Box<rhai::EvalAltResult>> {
+    let args = Args::parse();
+
     let mut engine = rhai::Engine::new();
 
       // The macro call creates a Rhai module from the plugin module.
@@ -88,18 +100,6 @@ pub fn main() -> Result<(), Box<rhai::EvalAltResult>> {
     // Define a custom operator '@' with precedence of 160 (i.e. between +|- and *|/).
     engine.register_custom_operator("@", 160).unwrap();
 
-    let script = r#"
-        let s = `{"path": "/foo"}`;
-        let meta = parse_json(s);
-        let route = switch meta.path {
-            "/" => "index.html",
-            "/foo" => "foo.html",
-            _ => "404.sh"
-        };
-        print(route);
-        print(get_num());
-        print(greet("Sam"));
-    "#;
-    engine.run(script)?;
+    engine.run_file(args.path)?;
     Ok(())
 }
