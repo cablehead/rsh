@@ -16,6 +16,21 @@ pub struct TestStruct {
     pub value: i64
 }
 
+#[derive(Clone)]
+pub struct Reader<'a> {
+    reader: &'a (dyn std::io::BufRead + 'a),
+    buffer: String,
+}
+
+impl<'a> Reader<'a> {
+    fn new(reader: &'a (dyn std::io::BufRead + 'a)) -> Reader<'a> {
+        Reader {
+            reader: reader,
+            buffer: String::new(),
+        }
+    }
+}
+
 #[export_module]
 mod my_module {
     // This type alias will register the friendly name 'ABC' for the
@@ -56,11 +71,6 @@ mod my_module {
     fn mystic_number() -> i64 {
         42
     }
-    // This global function defines a custom operator '@'.
-    #[rhai_fn(name = "@", global)]
-    pub fn square_add(x: i64, y: i64) -> i64 {
-        x * x + y * y
-    }
 
     // Sub-modules are ignored when the module is registered globally.
     pub mod my_sub_module {
@@ -86,20 +96,16 @@ mod my_module {
 
 
 pub fn main() -> Result<(), Box<rhai::EvalAltResult>> {
-    let mut buffer = String::new();
-    let stdin = std::io::stdin();
-    stdin.read_line(&mut buffer).unwrap();
-    print!("{}", buffer);
+    let stdin = Reader::new(&std::io::stdin().lock());
+    // stdin.read_line(&mut buffer).unwrap();
+    // print!("{}", buffer);
 
     let args = Args::parse();
 
     let mut engine = rhai::Engine::new();
-
-      // The macro call creates a Rhai module from the plugin module.
     let module = exported_module!(my_module);
-
     engine.register_static_module("sh", module.into());
-
     engine.run_file(args.path)?;
+
     Ok(())
 }
