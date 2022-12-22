@@ -29,9 +29,10 @@ impl<'a> Reader<'a> {
         }
     }
 
-    fn line(&'a mut self) -> String {
+    fn line<'f>(&'f mut self) -> &'f str {
+        self.buffer.clear();
         self.reader.read_line(&mut self.buffer).unwrap();
-        self.buffer.clone()
+        self.buffer.as_str()
     }
 }
 
@@ -102,6 +103,7 @@ mod my_module {
 pub fn main() -> Result<(), Box<rhai::EvalAltResult>> {
     let mut binding = std::io::stdin().lock();
     let mut stdin = Reader::new(&mut binding);
+    print!("{}", stdin.line());
     print!("{}", stdin.line());
 
     let args = Args::parse();
