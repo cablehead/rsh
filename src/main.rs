@@ -16,13 +16,13 @@ pub struct TestStruct {
     pub value: i64,
 }
 
-pub struct Reader<'a> {
-    reader: &'a mut (dyn std::io::BufRead + 'a),
+pub struct Reader {
+    reader:  Box<dyn std::io::BufRead>,
     buffer: String,
 }
 
-impl<'a> Reader<'a> {
-    fn new(reader: &'a mut (dyn std::io::BufRead + 'a)) -> Reader<'a> {
+impl Reader {
+    fn new(reader: Box<dyn std::io::BufRead>) -> Reader {
         Reader {
             reader: reader,
             buffer: String::new(),
@@ -57,6 +57,10 @@ mod my_module {
     pub fn get_num() -> i64 {
         mystic_number()
     }
+
+    // pub fn stdin() ->
+
+
     /// This function will be registered as 'create_abc'.
     pub fn create_abc(value: i64) -> ABC {
         ABC { value }
@@ -88,8 +92,9 @@ mod my_module {
 }
 
 pub fn main() -> Result<(), Box<rhai::EvalAltResult>> {
-    let mut binding = std::io::stdin().lock();
-    let mut stdin = Reader::new(&mut binding);
+    let stdin = std::io::stdin().lock();
+    let mut stdin = Reader::new(Box::new(stdin));
+    print!("{}", stdin.line());
     print!("{}", stdin.line());
 
     let args = Args::parse();
