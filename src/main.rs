@@ -16,18 +16,22 @@ pub struct TestStruct {
     pub value: i64
 }
 
-#[derive(Clone)]
 pub struct Reader<'a> {
-    reader: &'a (dyn std::io::BufRead + 'a),
+    reader: &'a mut (dyn std::io::BufRead + 'a),
     buffer: String,
 }
 
 impl<'a> Reader<'a> {
-    fn new(reader: &'a (dyn std::io::BufRead + 'a)) -> Reader<'a> {
+    fn new(reader: &'a mut (dyn std::io::BufRead + 'a)) -> Reader<'a> {
         Reader {
             reader: reader,
             buffer: String::new(),
         }
+    }
+
+    fn line(&'a mut self) -> String {
+        self.reader.read_line(&mut self.buffer).unwrap();
+        self.buffer.clone()
     }
 }
 
@@ -96,9 +100,9 @@ mod my_module {
 
 
 pub fn main() -> Result<(), Box<rhai::EvalAltResult>> {
-    let stdin = Reader::new(&std::io::stdin().lock());
-    // stdin.read_line(&mut buffer).unwrap();
-    // print!("{}", buffer);
+    let mut binding = std::io::stdin().lock();
+    let mut stdin = Reader::new(&mut binding);
+    print!("{}", stdin.line());
 
     let args = Args::parse();
 
