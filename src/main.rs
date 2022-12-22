@@ -13,7 +13,7 @@ struct Args {
 // My custom type
 #[derive(Clone)]
 pub struct TestStruct {
-    pub value: i64
+    pub value: i64,
 }
 
 pub struct Reader<'a> {
@@ -82,35 +82,23 @@ mod my_module {
         // This function is ignored when registered globally.
         // Otherwise it is a valid registered function under a sub-module.
         pub fn get_info() -> String {
-            "hello".to_string()
-        }
-    }
-
-    // Sub-modules are commonly used to put feature gates on a group of
-    // functions because feature gates cannot be put on function definitions.
-    // This is currently a limitation of the plugin procedural macros.
-    pub mod advanced {
-        // This function is ignored when registered globally.
-        // Otherwise it is a valid registered function under a sub-module
-        // which only exists when the 'advanced_functions' feature is used.
-        pub fn advanced_calc(input: i64) -> i64 {
-            input * 2
+            "say what".to_string()
         }
     }
 }
-
 
 pub fn main() -> Result<(), Box<rhai::EvalAltResult>> {
     let mut binding = std::io::stdin().lock();
     let mut stdin = Reader::new(&mut binding);
     print!("{}", stdin.line());
-    print!("{}", stdin.line());
 
     let args = Args::parse();
 
     let mut engine = rhai::Engine::new();
+
     let module = exported_module!(my_module);
     engine.register_static_module("sh", module.into());
+
     engine.run_file(args.path)?;
 
     Ok(())
