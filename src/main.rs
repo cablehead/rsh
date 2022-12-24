@@ -14,6 +14,8 @@ struct Args {
 
 #[derive(Clone)]
 pub struct Reader {
+    // we need to wrap the BufRead in an Arc Mutex as rhai requires objects to be Clone-able
+    // there might be around that I haven't come across yet...
     reader: Arc<Mutex<Box<dyn std::io::BufRead>>>,
 }
 
@@ -22,12 +24,6 @@ impl Reader {
         Reader {
             reader: Arc::new(Mutex::new(reader)),
         }
-    }
-
-    pub fn line(&mut self) -> rhai::ImmutableString {
-        let mut buffer = String::new();
-        self.reader.lock().unwrap().read_line(&mut buffer).unwrap();
-        buffer.into()
     }
 }
 
@@ -49,7 +45,11 @@ mod my_module {
     // todo: surface parse errors
     pub fn json(ts: &mut Reader) -> rhai::Dynamic {
         let mut reader = ts.reader.lock().unwrap();
-        serde_json::from_reader(&mut *reader).unwrap()
+        // by using serde_json's into_iter, we only consume Reader until the end the next Value,
+        // preserving the remainder Reader for additional reads
+        let deserializer = serde_json::Deserializer::from_reader(&mut *reader);
+        let mut iterator = deserializer.into_iter::<rhai::Dynamic>();
+        iterator.next().unwrap().unwrap()
     }
 }
 
