@@ -44,6 +44,13 @@ mod my_module {
         ts.reader.lock().unwrap().read_line(&mut buffer).unwrap();
         buffer.into()
     }
+
+    #[rhai_fn(global)]
+    // todo: surface parse errors
+    pub fn json(ts: &mut Reader) -> rhai::Dynamic {
+        let mut reader = ts.reader.lock().unwrap();
+        serde_json::from_reader(&mut *reader).unwrap()
+    }
 }
 
 pub fn main() -> Result<(), Box<rhai::EvalAltResult>> {
