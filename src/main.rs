@@ -89,17 +89,18 @@ mod tests {
         engine.register_static_module("sh", module.into());
 
         let res = engine
-            .eval::<String>(
+            .eval::<String>(&format!(
                 r#"
                 print("hello");
 
-                let reader = sh::open("file.txt");
+                let reader = sh::open("{}");
                 print(reader.line());
                 print(reader.line());
 
                 "hi"
                 "#,
-            )
+                file.path().display(),
+            ))
             .unwrap();
 
         println!("{}", res);
