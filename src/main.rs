@@ -34,6 +34,12 @@ mod my_module {
         Reader::new(Box::new(stdin))
     }
 
+    pub fn open(path: String) -> Reader {
+        let file = std::fs::File::open(path).unwrap();
+        let file = std::io::BufReader::new(file);
+        Reader::new(Box::new(file))
+    }
+
     #[rhai_fn(global)]
     pub fn line(ts: &mut Reader) -> rhai::ImmutableString {
         let mut buffer = String::new();
@@ -61,7 +67,22 @@ pub fn main() -> Result<(), Box<rhai::EvalAltResult>> {
     let module = exported_module!(my_module);
     engine.register_static_module("sh", module.into());
 
-    engine.run_file(args.path)?;
+    // engine.run_file(args.path)?;
+    //
+    let res = engine
+        .eval::<String>(
+            r#"
+            print("hello");
+
+            let reader = sh::open("file.txt");
+            print(reader.line());
+
+            "hi"
+            "#,
+        )
+        .unwrap();
+
+    println!("{}", res);
 
     Ok(())
 }
@@ -71,6 +92,5 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_reader_line() {
-    }
+    fn test_reader_line() {}
 }
