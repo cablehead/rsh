@@ -14,7 +14,7 @@ struct Args {
 
 #[derive(Clone)]
 pub struct Reader {
-    // we need to wrap the BufRead in an Arc Mutex as rhai requires objects to be Clone-able
+    // we need to wrap the BufRead in an Arc/Mutex as rhai requires objects to be Clone-able
     // there might be around that I haven't come across yet...
     reader: Arc<Mutex<Box<dyn std::io::BufRead>>>,
 }
@@ -46,7 +46,7 @@ mod my_module {
     pub fn json(ts: &mut Reader) -> rhai::Dynamic {
         let mut reader = ts.reader.lock().unwrap();
         // by using serde_json's into_iter, we only consume Reader until the end the next Value,
-        // preserving the remainder Reader for additional reads
+        // preserving the remainder of Reader for additional reads / redirection
         let deserializer = serde_json::Deserializer::from_reader(&mut *reader);
         let mut iterator = deserializer.into_iter::<rhai::Dynamic>();
         iterator.next().unwrap().unwrap()
@@ -64,4 +64,13 @@ pub fn main() -> Result<(), Box<rhai::EvalAltResult>> {
     engine.run_file(args.path)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_reader_line() {
+    }
 }
