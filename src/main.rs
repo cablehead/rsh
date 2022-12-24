@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::io::Write;
+
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use clap::{AppSettings, Parser};
 
@@ -60,30 +63,12 @@ mod my_module {
 }
 
 pub fn main() -> Result<(), Box<rhai::EvalAltResult>> {
-    let args = Args::parse();
-
     let mut engine = rhai::Engine::new();
-
     let module = exported_module!(my_module);
     engine.register_static_module("sh", module.into());
 
-    // engine.run_file(args.path)?;
-    //
-    let res = engine
-        .eval::<String>(
-            r#"
-            print("hello");
-
-            let reader = sh::open("file.txt");
-            print(reader.line());
-
-            "hi"
-            "#,
-        )
-        .unwrap();
-
-    println!("{}", res);
-
+    let args = Args::parse();
+    engine.run_file(args.path)?;
     Ok(())
 }
 
@@ -91,6 +76,32 @@ pub fn main() -> Result<(), Box<rhai::EvalAltResult>> {
 mod tests {
     use super::*;
 
+    use tempfile::NamedTempFile;
+
     #[test]
-    fn test_reader_line() {}
+    fn test_reader_line() {
+        let mut file = NamedTempFile::new().unwrap();
+        writeln!(file, "1").unwrap();
+        println!("{:?}", file.path());
+
+        let mut engine = rhai::Engine::new();
+        let module = exported_module!(my_module);
+        engine.register_static_module("sh", module.into());
+
+        let res = engine
+            .eval::<String>(
+                r#"
+                print("hello");
+
+                let reader = sh::open("file.txt");
+                print(reader.line());
+                print(reader.line());
+
+                "hi"
+                "#,
+            )
+            .unwrap();
+
+        println!("{}", res);
+    }
 }
