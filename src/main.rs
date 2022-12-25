@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -83,7 +81,7 @@ pub fn main() -> Result<(), Box<rhai::EvalAltResult>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    use std::io::Write;
     use tempfile::NamedTempFile;
 
     #[test]
