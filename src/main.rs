@@ -44,10 +44,14 @@ mod my_module {
     }
 
     #[rhai_fn(global)]
-    pub fn line(ts: &mut Reader) -> rhai::ImmutableString {
+    pub fn line(ts: &mut Reader) -> rhai::Dynamic {
         let mut buffer = String::new();
-        ts.reader.lock().unwrap().read_line(&mut buffer).unwrap();
-        buffer.into()
+        let n = ts.reader.lock().unwrap().read_line(&mut buffer).unwrap();
+        if n > 0 {
+            buffer.into()
+        } else {
+            ().into()
+        }
     }
 
     #[rhai_fn(global)]
@@ -82,27 +86,28 @@ mod tests {
     fn test_reader_line() {
         let mut file = NamedTempFile::new().unwrap();
         writeln!(file, "1").unwrap();
-        println!("{:?}", file.path());
+        writeln!(file, "2").unwrap();
+        writeln!(file, "3").unwrap();
 
         let mut engine = rhai::Engine::new();
         let module = exported_module!(my_module);
         engine.register_static_module("sh", module.into());
 
-        let res = engine
-            .eval::<String>(&format!(
-                r#"
-                print("hello");
-
+        let script = format!(
+            r#"
                 let reader = sh::open("{}");
-                print(reader.line());
-                print(reader.line());
+                let got = [];
+                loop {{
+                    let line = reader.line();
+                    got += line;
+                    if line == () {{ break; }}
+                }}
 
-                "hi"
+                got == ["1\n", "2\n", "3\n", ()]
                 "#,
-                file.path().display(),
-            ))
-            .unwrap();
-
-        println!("{}", res);
+            file.path().display(),
+        );
+        let ok = engine.eval::<bool>(&script).unwrap();
+        assert!(ok);
     }
 }
