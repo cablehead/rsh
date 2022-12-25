@@ -62,7 +62,11 @@ mod my_module {
         // preserving the remainder of Reader for additional reads / redirection
         let deserializer = serde_json::Deserializer::from_reader(&mut *reader);
         let mut iterator = deserializer.into_iter::<rhai::Dynamic>();
-        iterator.next().unwrap().unwrap()
+        let more = iterator.next();
+        match more {
+            Some(result) => result.unwrap().into(),
+            None => ().into(),
+        }
     }
 }
 
@@ -105,6 +109,27 @@ mod tests {
 
                 got == ["1\n", "2\n", "3\n", ()]
                 "#,
+            file.path().display(),
+        );
+        let ok = engine.eval::<bool>(&script).unwrap();
+        assert!(ok);
+    }
+
+    #[test]
+    fn test_reader_json() {
+        let mut file = NamedTempFile::new().unwrap();
+        writeln!(file, r#"{{"foo": "bar"}}"#).unwrap();
+
+        let mut engine = rhai::Engine::new();
+        let module = exported_module!(my_module);
+        engine.register_static_module("sh", module.into());
+
+        let script = format!(
+            r#"
+            let reader = sh::open("{}");
+            if reader.json().foo != "bar" {{ return false; }}
+            reader.json() == ()
+            "#,
             file.path().display(),
         );
         let ok = engine.eval::<bool>(&script).unwrap();
